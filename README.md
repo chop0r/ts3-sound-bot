@@ -10,7 +10,7 @@ Windows / Linux without Docker.
 
 ## Features
 
-- Plays YouTube (search by title or artist, links, playlists) and direct links; queue, playlists you create and edit in the panel.
+- Plays YouTube (search by title or artist, links, playlists), **SoundCloud links** and direct links (anything yt-dlp supports usually works); queue, playlists you create and edit in the panel.
 - **Web panel** (Vue 3): player, queue, playlists, channel tree where you drag the bot to another channel, instances, server info,
   a console and a list of all commands with descriptions. Works on phones.
 - **English / Russian** interface (add a language with one JSON file), **dark / light / hacker** themes, keyboard shortcuts. Bot chat replies follow the language chosen in the installer.
@@ -107,7 +107,7 @@ TS3AudioBot code (Splamy/TS3AudioBot, goD0S fork), which uses that license. See 
 
 ## Возможности
 
-- Играет YouTube (поиск по названию или исполнителю, ссылки, плейлисты) и прямые ссылки; очередь, плейлисты, которые создаются и правятся в панели.
+- Играет YouTube (поиск по названию или исполнителю, ссылки, плейлисты), **ссылки SoundCloud** и прямые ссылки (обычно работает всё, что понимает yt-dlp); очередь, плейлисты, которые создаются и правятся в панели.
 - **Веб-панель** (Vue 3): плеер, очередь, плейлисты, дерево каналов (бота можно перетащить в другой канал), экземпляры, данные сервера,
   консоль и список всех команд с описаниями. Удобна с телефона.
 - Интерфейс **на английском и русском** (новый язык - один JSON-файл), темы **тёмная / светлая / хакерская**, горячие клавиши.
