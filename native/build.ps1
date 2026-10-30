@@ -22,7 +22,7 @@ function Fetch([string]$url, [string]$file) {
     $dest = Join-Path $cache $file
     if (-not (Test-Path $dest)) {
         New-Item -ItemType Directory -Force -Path $cache | Out-Null
-        & curl.exe -fL --retry 3 -# -o $dest $url
+        & $(if ($IsWindows -or $env:OS) { 'curl.exe' } else { 'curl' }) -fL --retry 3 -# -o $dest $url
         if ($LASTEXITCODE -ne 0) { Remove-Item -Force $dest -ErrorAction SilentlyContinue; throw "download failed: $url" }
     }
     return $dest
@@ -37,7 +37,7 @@ function BundleFfmpeg([string]$rid, [string]$stage) {
     if ($rid -eq 'win-x64') {
         $url = 'https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip'
         $zip = Fetch $url 'ffmpeg-win.zip'
-        & tar -xf $zip -C $tmp
+        Expand-Archive -LiteralPath $zip -DestinationPath $tmp -Force   # GNU tar (CI) cannot read zip
         $exe = Get-ChildItem $tmp -Recurse -Filter ffmpeg.exe | Select-Object -First 1
         Copy-Item $exe.FullName (Join-Path $bin 'ffmpeg.exe')
         $root = $exe.Directory.Parent.FullName
@@ -73,7 +73,12 @@ function Pack([string]$rid, [string]$scriptDir, [string]$archive) {
     Copy-Item -Recurse -Force (Join-Path $PSScriptRoot '../templates') $stage
     BundleFfmpeg $rid $stage
     Copy-Item -Force (Join-Path $PSScriptRoot '../LICENSE'), (Join-Path $PSScriptRoot '../NOTICE.md'), (Join-Path $PSScriptRoot 'README.md'), (Join-Path $PSScriptRoot 'README.ru.md') $stage
-    & tar -a -c -f (Join-Path $dist $archive) -C (Join-Path $PSScriptRoot 'build/stage') "ts3musicbot-native-$rid"
+    $parent = Join-Path $PSScriptRoot 'build/stage'
+    if ($archive.EndsWith('.zip') -and -not ($IsWindows -or $env:OS)) {   # GNU tar (Linux CI) cannot write zip
+        Push-Location $parent; & zip -qr (Join-Path $dist $archive) "ts3musicbot-native-$rid"; Pop-Location
+    } else {
+        & tar -a -c -f (Join-Path $dist $archive) -C $parent "ts3musicbot-native-$rid"
+    }
 }
 Pack 'win-x64' 'win' 'ts3musicbot-native-win-x64.zip'
 Pack 'linux-x64' 'linux' 'ts3musicbot-native-linux-x64.tar.gz'

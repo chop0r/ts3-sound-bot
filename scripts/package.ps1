@@ -22,7 +22,8 @@ Copy-Item -Recurse -Path (Join-Path $root 'bot'), (Join-Path $root 'templates') 
 Copy-Item -Recurse -LiteralPath (Join-Path $root 'webui') -Destination (Join-Path $stage 'webui')
 Remove-Item -Recurse -Force (Join-Path $stage 'webui/node_modules'), (Join-Path $stage 'webui/dist'), (Join-Path $stage 'webui/dev') -ErrorAction SilentlyContinue
 Copy-Item -LiteralPath (Join-Path $root 'LICENSE'), (Join-Path $root 'NOTICE.md'), (Join-Path $root '.dockerignore') -Destination $stage
-& tar -a -c -f (Join-Path $dist "$name.zip") -C (Join-Path $dist 'stage') $name
+if ($IsWindows -or $env:OS) { & tar -a -c -f (Join-Path $dist "$name.zip") -C (Join-Path $dist 'stage') $name }
+else { Push-Location (Join-Path $dist 'stage'); & zip -qr (Join-Path $dist "$name.zip") $name; Pop-Location }   # GNU tar (Linux CI) cannot write zip
 if ($LASTEXITCODE -ne 0) { throw 'tar failed' }
 
 # ---- installers without Docker
