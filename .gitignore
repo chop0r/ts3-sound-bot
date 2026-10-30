@@ -1,0 +1,21 @@
+# Dependencies and build output
+node_modules/
+dist/
+native/build/ctx/
+native/build/out/
+native/build/stage/
+native/dist/
+
+# Local installation data - NEVER commit (keys, bot identity, server password, logs)
+data/
+.env
+*.bak*
+stop.flag
+bot.pid
+settings.env
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

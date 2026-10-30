@@ -1,0 +1,12 @@
+# Permissions: everyone has the same rights - all music, playlists, search, volume, restart.
+# Only dangerous things are closed: C# code execution, connecting the bot to other servers, plugins, settings and rights.
+[[rule]]
+	"+" = "*"
+	"-" = [
+		"cmd.eval",
+		"cmd.bot.connect.*",
+		"cmd.plugins.*",
+		"cmd.settings.*",
+		"cmd.rights.*",
+		"cmd.system.*",
+	]

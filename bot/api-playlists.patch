@@ -1,0 +1,204 @@
+diff --git a/TS3AudioBot/Web/ApiV2.cs b/TS3AudioBot/Web/ApiV2.cs
+index 416fc12..95d2a12 100644
+--- a/TS3AudioBot/Web/ApiV2.cs
++++ b/TS3AudioBot/Web/ApiV2.cs
+@@ -80,6 +80,12 @@ public Route(string method, string pattern, Func<HttpContext, Dictionary<string,
+ 			new Route("GET", "/bot/{id}/playlists/{listId}", (c, p) => GetPlaylist(c)),
+ 			new Route("POST", "/bot/{id}/playlists/{listId}/play", (c, p) => PlayPlaylist(c)),
+ 			new Route("DELETE", "/bot/{id}/playlists/{listId}", (c, p) => DeletePlaylist(c)),
++			new Route("GET", "/bot/{id}/search", (c, p) => SearchApi(c)),
++			new Route("POST", "/bot/{id}/playlists", (c, p) => CreatePlaylistApi(c)),
++			new Route("PUT", "/bot/{id}/playlists/{listId}", (c, p) => RenamePlaylistApi(c)),
++			new Route("POST", "/bot/{id}/playlists/{listId}/items", (c, p) => AddPlaylistItemApi(c)),
++			new Route("DELETE", "/bot/{id}/playlists/{listId}/items/{index}", (c, p) => RemovePlaylistItemApi(c)),
++			new Route("POST", "/bot/{id}/playlists/{listId}/items/{index}/move", (c, p) => MovePlaylistItemApi(c)),
+ 			new Route("POST", "/bot/{id}/netease/import", (c, p) => NeteaseImport(c)),
+ 			new Route("POST", "/bot/{id}/netease/migrate", (c, p) => NeteaseMigrate(c)),
+ 			new Route("GET", "/bot/{id}/netease/search", (c, p) => NeteaseSearch(c)),
+@@ -576,6 +582,178 @@ private static async Task DeletePlaylist(HttpContext ctx)
+ 			await WriteJson(ctx, new { ok = true }).ConfigureAwait(false);
+ 		}
+ 
++		// ---------- playlist editing (added in this build) ----------
++
++		private static async Task SearchApi(HttpContext ctx)
++		{
++			var bot = GetBotOrFirst(ParseId(ctx));
++			var query = ctx.Request.Query["q"].ToString().Trim();
++			if (query.Length == 0)
++			{
++				await WriteError(ctx, "Empty request").ConfigureAwait(false);
++				return;
++			}
++			try
++			{
++				var found = await ResolverOf(bot).Search("youtube", query).ConfigureAwait(false);
++				await WriteJson(ctx, new
++				{
++					results = found.Take(15).Select(r => new
++					{
++						id = r.ResourceId,
++						title = r.ResourceTitle,
++						link = "https://www.youtube.com/watch?v=" + r.ResourceId,
++					}),
++				}).ConfigureAwait(false);
++			}
++			catch (AudioBotException ex)
++			{
++				await WriteError(ctx, ex.Message).ConfigureAwait(false);
++			}
++		}
++
++		private static async Task CreatePlaylistApi(HttpContext ctx)
++		{
++			var bot = GetBotOrFirst(ParseId(ctx));
++			var body = await ReadBody<CreatePlaylistBody>(ctx).ConfigureAwait(false);
++			var title = (body.Title ?? "").Trim();
++			if (title.Length == 0)
++			{
++				await WriteError(ctx, "Playlist title is required").ConfigureAwait(false);
++				return;
++			}
++			var id = string.IsNullOrWhiteSpace(body.Id) ? "list-" + Guid.NewGuid().ToString("N").Substring(0, 8) : body.Id!.Trim();
++			var result = PlaylistManagerOf(bot).CreatePlaylist(id, title);
++			if (!result.Ok)
++			{
++				await WriteError(ctx, result.Error.Str).ConfigureAwait(false);
++				return;
++			}
++			await WriteJson(ctx, new { ok = true, id, title }).ConfigureAwait(false);
++		}
++
++		private static async Task RenamePlaylistApi(HttpContext ctx)
++		{
++			var bot = GetBotOrFirst(ParseId(ctx));
++			var listId = (string?)ctx.Request.RouteValues["listId"] ?? "";
++			var body = await ReadBody<CreatePlaylistBody>(ctx).ConfigureAwait(false);
++			var title = (body.Title ?? "").Trim();
++			if (title.Length == 0 || listId.StartsWith(".", StringComparison.Ordinal))
++			{
++				await WriteError(ctx, "Playlist title is required").ConfigureAwait(false);
++				return;
++			}
++			var result = PlaylistManagerOf(bot).ModifyPlaylist(listId, list => list.SetTitle(title));
++			if (!result.Ok)
++			{
++				await WriteError(ctx, result.Error.Str).ConfigureAwait(false);
++				return;
++			}
++			await WriteJson(ctx, new { ok = true }).ConfigureAwait(false);
++		}
++
++		private static async Task AddPlaylistItemApi(HttpContext ctx)
++		{
++			var bot = GetBotOrFirst(ParseId(ctx));
++			var listId = (string?)ctx.Request.RouteValues["listId"] ?? "";
++			var body = await ReadBody<PlayBody>(ctx).ConfigureAwait(false);
++			if (string.IsNullOrWhiteSpace(body.Url) || listId.StartsWith(".", StringComparison.Ordinal))
++			{
++				await WriteError(ctx, "A track link is required").ConfigureAwait(false);
++				return;
++			}
++			using var _cookieScope = NeteaseCookieContext.Use(HeaderCookie(ctx));
++			try
++			{
++				var playResource = await ResolverOf(bot).Load(body.Url).ConfigureAwait(false);
++				var item = PlaylistItem.From(playResource);
++				E<Localization.LocalStr>? err = null;
++				int count = 0;
++				var result = PlaylistManagerOf(bot).ModifyPlaylist(listId, list =>
++				{
++					var added = list.Add(item);
++					if (!added.Ok)
++						err = added;
++					count = list.Items.Count;
++				});
++				if (!result.Ok)
++				{
++					await WriteError(ctx, result.Error.Str).ConfigureAwait(false);
++					return;
++				}
++				if (err != null)
++				{
++					await WriteError(ctx, err.Value.Error.Str).ConfigureAwait(false);
++					return;
++				}
++				await WriteJson(ctx, new { ok = true, title = playResource.AudioResource.ResourceTitle, count }).ConfigureAwait(false);
++			}
++			catch (AudioBotException ex)
++			{
++				await WriteError(ctx, ex.Message).ConfigureAwait(false);
++			}
++		}
++
++		private static async Task RemovePlaylistItemApi(HttpContext ctx)
++		{
++			var bot = GetBotOrFirst(ParseId(ctx));
++			var listId = (string?)ctx.Request.RouteValues["listId"] ?? "";
++			int index = ParseId(ctx, "index");
++			E<Localization.LocalStr>? err = null;
++			var result = PlaylistManagerOf(bot).ModifyPlaylist(listId, list =>
++			{
++				if (index < 0 || index >= list.Items.Count)
++					err = new Localization.LocalStr("index out of range");
++				else
++					list.RemoveAt(index);
++			});
++			if (!result.Ok)
++			{
++				await WriteError(ctx, result.Error.Str).ConfigureAwait(false);
++				return;
++			}
++			if (err != null)
++			{
++				await WriteError(ctx, err.Value.Error.Str).ConfigureAwait(false);
++				return;
++			}
++			await WriteJson(ctx, new { ok = true }).ConfigureAwait(false);
++		}
++
++		private static async Task MovePlaylistItemApi(HttpContext ctx)
++		{
++			var bot = GetBotOrFirst(ParseId(ctx));
++			var listId = (string?)ctx.Request.RouteValues["listId"] ?? "";
++			int index = ParseId(ctx, "index");
++			var body = await ReadBody<ValueBody>(ctx).ConfigureAwait(false);
++			E<Localization.LocalStr>? err = null;
++			var result = PlaylistManagerOf(bot).ModifyPlaylist(listId, list =>
++			{
++				if (index < 0 || index >= list.Items.Count || body.Value is null)
++				{
++					err = new Localization.LocalStr("index out of range");
++					return;
++				}
++				var item = list.Items[index];
++				list.RemoveAt(index);
++				int to = Math.Max(0, Math.Min(body.Value.Value, list.Items.Count));
++				var inserted = list.Insert(to, item);
++				if (!inserted.Ok)
++					err = inserted;
++			});
++			if (!result.Ok)
++			{
++				await WriteError(ctx, result.Error.Str).ConfigureAwait(false);
++				return;
++			}
++			if (err != null)
++			{
++				await WriteError(ctx, err.Value.Error.Str).ConfigureAwait(false);
++				return;
++			}
++			await WriteJson(ctx, new { ok = true }).ConfigureAwait(false);
++		}
++
+ 		// ---------- netease ----------
+ 
+ 		private static async Task NeteaseImport(HttpContext ctx)
+@@ -1162,6 +1340,7 @@ private sealed class ChannelBody { public string? Channel { get; set; } public u
+ 		private sealed class AutoRunBody { public bool? AutoRun { get; set; } }
+ 		private sealed class ValueBody { public int? Value { get; set; } }
+ 		private sealed class EnqueueBody { public string? Url { get; set; } public string? ListId { get; set; } }
++		private sealed class CreatePlaylistBody { public string? Id { get; set; } public string? Title { get; set; } }
+ 		private sealed class PlayPlaylistBody { public int? Index { get; set; } public bool? Shuffle { get; set; } }
+ 		private sealed class ImportBody { public string? Url { get; set; } public string? ListId { get; set; } public bool? Replace { get; set; } public string? Cookie { get; set; } }
+ 	}

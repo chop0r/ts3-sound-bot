@@ -1,0 +1,14 @@
+# Docker build context is the repository root: keep it small and free of local data
+**/node_modules
+webui/dist
+docker/data
+docker/.env
+data
+.env
+native
+docs
+dist
+.git
+.github
+*.zip
+*.tar.gz
