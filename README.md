@@ -83,6 +83,10 @@ and the documentation were written and tested together with it. As with any soft
 Not affiliated with or endorsed by TeamSpeak Systems or YouTube. TeamSpeak is a trademark of its owner. Playing content from YouTube may be
 restricted by its terms of service in your country; use the bot responsibly and for personal, non-commercial purposes.
 
+## Support the author
+
+The bot is free. If it is useful to you and you want to say thanks: [DonationAlerts](https://www.donationalerts.com/r/chopor). Thank you!
+
 ## License and credits
 
 Everything here is licensed under the [Open Software License 3.0](LICENSE), because it is built on, and derived from, the upstream
@@ -172,6 +176,10 @@ pwsh scripts/package.ps1 -Version 1.0.0     # результат в dist/
 
 Проект не связан с TeamSpeak Systems и YouTube и не одобрен ими. TeamSpeak - товарный знак его владельца. Воспроизведение контента
 YouTube может ограничиваться его условиями использования в вашей стране; используйте бота ответственно и для личных некоммерческих целей.
+
+## Поддержать автора
+
+Бот бесплатный. Если он вам пригодился и хочется сказать спасибо: [DonationAlerts](https://www.donationalerts.com/r/chopor). Спасибо!
 
 ## Лицензия
 
