@@ -19,3 +19,5 @@ settings.env
 Thumbs.db
 .vscode/
 .idea/
+native/build/cache/
+native/build/ff-*/

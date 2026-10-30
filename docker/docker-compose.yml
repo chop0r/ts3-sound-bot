@@ -14,6 +14,7 @@ services:
       - "host.docker.internal:host-gateway"                  # lets the bot reach a TeamSpeak server running on this machine
     environment:
       YTDLP_PROXY: ${YTDLP_PROXY:-}
+      BOT_LANG: ${BOT_LANG:-en}                              # language of the bot's chat replies (en | ru)
     volumes:
       - ./data:/app/data                                     # settings, playlists, logs, cookies.txt
       - musicbot-db:/app/db                                  # LiteDB database (does not work on a Windows folder)

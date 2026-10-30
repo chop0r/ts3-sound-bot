@@ -128,6 +128,13 @@ async function run(line, name, out) {
   } catch (e) { out({ ok: false, text: e.message }) }
 }
 
+async function uninstallBot() {
+  if (!confirm(t('settings.uninstallConfirm'))) return
+  if (prompt(t('settings.uninstallType')) !== 'DELETE') return
+  run('/uninstall DELETE', '', o => { uninstallOut.value = o })
+}
+const uninstallOut = ref(null)
+
 function runCmd(c) { run(buildLine(c), c.name, o => { results.value[c.name] = o }) }
 function runFree() {
   const v = free.value.trim()
@@ -180,6 +187,12 @@ onMounted(() => { if (store.tab === 'settings') { if (section.value === 'server'
           <tr><td>{{ $t('settings.botVersion') }}</td><td>{{ store.version || '—' }}</td></tr>
           <tr><td>{{ $t('settings.instances') }}</td><td>{{ store.bots.length }}</td></tr>
         </table>
+      </div>
+      <div class="card block danger">
+        <div class="block-title">{{ $t('settings.uninstall') }}</div>
+        <div class="block-sub">{{ $t('settings.uninstallHint') }}</div>
+        <button class="btn danger" @click="uninstallBot"><Icon name="trash" :size="14" /> {{ $t('settings.uninstallBtn') }}</button>
+        <div v-if="uninstallOut" class="block-sub" :class="{ err: !uninstallOut.ok }" style="margin-top: 8px">{{ uninstallOut.text }}</div>
       </div>
     </div>
 

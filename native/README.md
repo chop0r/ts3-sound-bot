@@ -1,7 +1,7 @@
 # TS3 Sound Bot - installer without Docker
 
 The bot is included in this archive, ready to run (self-contained, no .NET needed). The installer downloads three helper
-tools from their official sites: **yt-dlp**, **deno** (needed by yt-dlp for YouTube) and **ffmpeg**. No Python is required.
+tools from their official sites: **yt-dlp** and **deno** (needed by yt-dlp for YouTube). **ffmpeg** is bundled unchanged (GPL, see `licenses/ffmpeg/`). No Python is required.
 
 [Русская версия](README.ru.md)
 
@@ -15,16 +15,16 @@ Optional: the installer can start the bot automatically when you log in to Windo
 
 Daily use: `start.cmd` and `stop.cmd`. Logs: `data\logs\`. Update the tools: run `install.cmd` again, choose 1.
 Unattended: `install.ps1 -NonInteractive -Server 192.168.1.10:9987 -Nickname MusicBot -Access lan -Port 58913 -Autostart`.
-Remove: `stop.cmd`, delete the folder (and the `TS3MusicBot` task if you enabled autostart).
+Remove completely: `uninstall.cmd` (or the "Delete the bot" button in the panel, Settings): stops the bot, removes autostart and the folder.
 
 ## Linux (x64)
 
 1. `tar xzf ts3musicbot-native-linux-x64.tar.gz && cd ts3musicbot-native-linux-x64`
 2. Install the system libraries once: `sudo apt install libicu72 libopus0` (Debian/Ubuntu names; other distributions: ICU and libopus).
-3. `bash install.sh` and answer the questions. The installer downloads yt-dlp, deno and ffmpeg into `bin/`.
+3. `bash install.sh` and answer the questions. The installer downloads yt-dlp and deno into `bin/` (ffmpeg is bundled).
 
 Optional: `--autostart` (or the question) creates a systemd **user** service `ts3musicbot`.
-Daily use: `./start.sh`, `./stop.sh`; logs in `data/logs/`. Unattended: `bash install.sh --non-interactive --server 192.168.1.10:9987 --nickname MusicBot --access lan --port 58913`.
+Remove completely: `./uninstall.sh` (or the panel button). Daily use: `./start.sh`, `./stop.sh`; logs in `data/logs/`. Unattended: `bash install.sh --non-interactive --server 192.168.1.10:9987 --nickname MusicBot --access lan --port 58913`.
 
 ## Using the bot
 

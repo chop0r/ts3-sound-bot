@@ -311,7 +311,7 @@ if ($mode -ne 'update') {
     # repository layout (docker\ next to bot\) or the flattened release zip (bot\ next to this script)
     $layoutEnv = ''
     if (-not (Test-Path -LiteralPath (Join-Path $PSScriptRoot '..\bot\patch.sh')) -and (Test-Path -LiteralPath (Join-Path $PSScriptRoot 'bot\patch.sh'))) { $layoutEnv = "BUILD_CONTEXT=.`nBUILD_DOCKERFILE=Dockerfile`n" }
-    $envText = "BOT_CONTAINER=$ContainerName`nBOT_IMAGE=${ContainerName}:latest`nBIND_ADDR=$bind`nWEB_PORT=$Port`nYTDLP_PROXY=$Proxy`n$layoutEnv"
+    $envText = "BOT_CONTAINER=$ContainerName`nBOT_IMAGE=${ContainerName}:latest`nBIND_ADDR=$bind`nWEB_PORT=$Port`nYTDLP_PROXY=$Proxy`nBOT_LANG=$($script:Lang)`n$layoutEnv"
     WriteUtf8 '.env' $envText
 
     $global = @"

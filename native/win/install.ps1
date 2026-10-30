@@ -209,6 +209,8 @@ $X = @{
     sNo          = 'no'
     writing      = 'Writing configuration...'
     dlHead       = 'Downloading tools (yt-dlp, deno, ffmpeg)...'
+    dlHave       = '  {0}: already downloaded'
+    unpack       = '  unpacking {0} ...'
     dlOne        = '  downloading {0} ...'
     dlFail       = 'Could not download {0}. Check your internet connection and run the installer again (choose "Update tools").'
     starting     = 'Starting the bot...'
@@ -231,6 +233,8 @@ $X = @{
     sNo          = 'нет'
     writing      = 'Записываю настройки...'
     dlHead       = 'Скачиваю инструменты (yt-dlp, deno, ffmpeg)...'
+    dlHave       = '  {0}: уже скачан'
+    unpack       = '  распаковываю {0} ...'
     dlOne        = '  скачиваю {0} ...'
     dlFail       = 'Не удалось скачать {0}. Проверьте интернет и запустите установщик снова (выберите "Обновить инструменты").'
     starting     = 'Запускаю бота...'
@@ -252,14 +256,32 @@ function AskYesNoDefaultNo([string]$prompt) {
 function Fwd([string]$p) { return ($p -replace '\\', '/') }
 function Download([string]$url, [string]$dest, [string]$what) {
     Say (T 'dlOne' @($what))
+    if (-not (TryDownload $url $dest)) {
+        Say (T 'dlFail' @($what)) 'Red'
+        exit 1
+    }
+}
+# curl.exe (Windows 10+) draws a progress bar; stalls >60 s abort the transfer
+function TryDownload([string]$url, [string]$dest) {
+    Remove-Item -LiteralPath $dest -Force -ErrorAction SilentlyContinue
+    $curl = Get-Command curl.exe -ErrorAction SilentlyContinue
+    if ($curl) {
+        $ea = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+        & curl.exe -fL --retry 2 --connect-timeout 20 --speed-limit 1000 --speed-time 60 -# -o $dest $url
+        $code = $LASTEXITCODE
+        $ErrorActionPreference = $ea
+        if ($code -eq 0 -and (Test-Path -LiteralPath $dest)) { return $true }
+        Remove-Item -LiteralPath $dest -Force -ErrorAction SilentlyContinue
+        return $false
+    }
     try {
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        $ProgressPreference = 'SilentlyContinue'
+        $ProgressPreference = 'Continue'
         Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $dest -TimeoutSec 600
+        return $true
     } catch {
-        Say (T 'dlFail' @($what)) 'Red'
         Say ('  ' + $_.Exception.Message) 'DarkGray'
-        exit 1
+        return $false
     }
 }
 function InstallTools {
@@ -269,16 +291,33 @@ function InstallTools {
     New-Item -ItemType Directory -Force -Path $tmp | Out-Null
     try {
         Say (T 'dlHead') 'Cyan'
-        Download 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe' (Join-Path $bin 'yt-dlp.exe') 'yt-dlp'
-        Download 'https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip' "$tmp\deno.zip" 'deno'
-        Expand-Archive -LiteralPath "$tmp\deno.zip" -DestinationPath $bin -Force
-        if (-not (Test-Path (Join-Path $bin 'ffmpeg.exe'))) {
-            Download 'https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip' "$tmp\ffmpeg.zip" 'ffmpeg'
-            Expand-Archive -LiteralPath "$tmp\ffmpeg.zip" -DestinationPath "$tmp\ff" -Force
+        $force = ($script:mode -eq 'update')   # "update tools" re-downloads; otherwise only what is missing
+        $n = 0; $total = 3
+        $n++; Say "[$n/$total]" 'Cyan'
+        if ($force -or -not (Test-Path (Join-Path $bin 'yt-dlp.exe'))) {
+            Download 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe' (Join-Path $bin 'yt-dlp.exe') 'yt-dlp'
+        } else { Say (T 'dlHave' @('yt-dlp')) }
+        $n++; Say "[$n/$total]" 'Cyan'
+        if ($force -or -not (Test-Path (Join-Path $bin 'deno.exe'))) {
+            Download 'https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip' "$tmp\deno.zip" 'deno'
+            Expand-Archive -LiteralPath "$tmp\deno.zip" -DestinationPath $bin -Force
+        } else { Say (T 'dlHave' @('deno')) }
+        $n++; Say "[$n/$total]" 'Cyan'
+        if (-not (Test-Path (Join-Path $bin 'ffmpeg.exe'))) {   # normally bundled in the archive
+            $ok = $false
+            foreach ($u in @('https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip',
+                             'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip')) {
+                Say (T 'dlOne' @('ffmpeg')); if (TryDownload $u "$tmp\ffmpeg.zip") { $ok = $true; break }
+            }
+            if (-not $ok) { Say (T 'dlFail' @('ffmpeg')) 'Red'; exit 1 }
+            Say (T 'unpack' @('ffmpeg'))
+            New-Item -ItemType Directory -Force -Path "$tmp\ff" | Out-Null
+            & "$env:SystemRoot\System32\tar.exe" -xf "$tmp\ffmpeg.zip" -C "$tmp\ff"
+            if ($LASTEXITCODE -ne 0) { Expand-Archive -LiteralPath "$tmp\ffmpeg.zip" -DestinationPath "$tmp\ff" -Force }
             $exe = Get-ChildItem -Path "$tmp\ff" -Recurse -Filter ffmpeg.exe | Select-Object -First 1
             if (-not $exe) { Say (T 'dlFail' @('ffmpeg')) 'Red'; exit 1 }
             Copy-Item -LiteralPath $exe.FullName -Destination (Join-Path $bin 'ffmpeg.exe') -Force
-        }
+        } else { Say (T 'dlHave' @('ffmpeg')) }
     } finally {
         Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue
     }
@@ -314,9 +353,11 @@ if (Test-Path -LiteralPath $marker) {
     }
 }
 
-$ProgressPreference = 'SilentlyContinue'
 $bin = Join-Path $PSScriptRoot 'bin'
 $data = Join-Path $PSScriptRoot 'data'
+
+# tools first: everything is downloaded before the first question
+if (-not $NoDownload) { InstallTools }
 
 if ($mode -ne 'update') {
     if (-not $NonInteractive) { Say ''; Say (T 'intro') }
@@ -454,7 +495,7 @@ ontimeout = ["1s", "5s", "10s", "30s", "repeat last"]
 "@
     WriteUtf8 'data\bots\default\bot.toml' ($bot + $identity)
     WriteUtf8 'data\websecrets.ini' ("# TS3AudioBot secrets - do not share this file`napi_key = $Key`n")
-    WriteUtf8 'settings.env' ("YTDLP_PROXY=$Proxy`nPORT=$Port`nACCESS=$Access`n")
+    WriteUtf8 'settings.env' ("YTDLP_PROXY=$Proxy`nPORT=$Port`nACCESS=$Access`nBOT_LANG=$($script:Lang)`n")
 } else {
     $st = Join-Path $PSScriptRoot 'settings.env'
     $Port = 58913; $Access = 'local'; $Key = ''
@@ -470,8 +511,6 @@ ontimeout = ["1s", "5s", "10s", "30s", "repeat last"]
 }
 
 # ---------------------------------------------------------------- tools, autostart, start
-if ($NoDownload) { } else { InstallTools }
-
 $taskName = 'TS3MusicBot'
 if ($null -ne $auto) {
     $runner = Join-Path $PSScriptRoot 'run-bot.ps1'

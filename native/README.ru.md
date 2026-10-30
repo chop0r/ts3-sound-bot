@@ -1,7 +1,7 @@
 # TS3 Sound Bot - установщик без Docker
 
 Бот уже лежит в архиве в готовом виде (самодостаточный, .NET ставить не нужно). Установщик скачивает с официальных сайтов
-три вспомогательные программы: **yt-dlp**, **deno** (нужен yt-dlp для YouTube) и **ffmpeg**. Python не нужен.
+две вспомогательные программы: **yt-dlp** и **deno** (нужен yt-dlp для YouTube). **ffmpeg** встроен без изменений (GPL, см. `licenses/ffmpeg/`). Python не нужен.
 
 [English version](README.md)
 
@@ -15,13 +15,13 @@
 
 Повседневно: `start.cmd` и `stop.cmd`. Логи: `data\logs\`. Обновить инструменты: снова `install.cmd`, пункт 1.
 Без вопросов: `install.ps1 -NonInteractive -Server 192.168.1.10:9987 -Nickname MusicBot -Access lan -Port 58913 -Autostart`.
-Удалить: `stop.cmd`, удалить папку (и задачу `TS3MusicBot`, если включали автозапуск).
+Удалить полностью: `uninstall.cmd` (или кнопка «Удалить бота» в панели, Настройки): останавливает бота, убирает автозапуск и папку.
 
 ## Linux (x64)
 
 1. `tar xzf ts3musicbot-native-linux-x64.tar.gz && cd ts3musicbot-native-linux-x64`
 2. Один раз поставьте системные библиотеки: `sudo apt install libicu72 libopus0` (имена для Debian/Ubuntu; в других дистрибутивах ICU и libopus).
-3. `bash install.sh` и ответьте на вопросы. Установщик скачает yt-dlp, deno и ffmpeg в `bin/`.
+3. `bash install.sh` и ответьте на вопросы. Установщик скачает yt-dlp и deno в `bin/` (ffmpeg встроен).
 
 По желанию `--autostart` (или вопрос) создаст пользовательскую службу systemd `ts3musicbot`.
 Повседневно: `./start.sh`, `./stop.sh`; логи в `data/logs/`. Без вопросов: `bash install.sh --non-interactive --server 192.168.1.10:9987 --nickname MusicBot --access lan --port 58913`.

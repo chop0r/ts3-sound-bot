@@ -13,7 +13,8 @@ Windows / Linux without Docker.
 - Plays YouTube (search by title or artist, links, playlists) and direct links; queue, playlists you create and edit in the panel.
 - **Web panel** (Vue 3): player, queue, playlists, channel tree where you drag the bot to another channel, instances, server info,
   a console and a list of all commands with descriptions. Works on phones.
-- **English / Russian** interface (add a language with one JSON file), **dark / light / hacker** themes, keyboard shortcuts.
+- **English / Russian** interface (add a language with one JSON file), **dark / light / hacker** themes, keyboard shortcuts. Bot chat replies follow the language chosen in the installer.
+- **Delete the bot** button (Settings): removes a Docker-free install completely (autostart, settings, files).
 - Commands in the TeamSpeak chat start with `/` (for example `/play <link>`, `/help`).
 - Interactive installers (English / Russian) that ask for the server address, nickname, panel access and key.
 - yt-dlp updates itself on every start (YouTube changes often).
@@ -29,7 +30,7 @@ Download an archive from the [Releases](../../releases) page, or build it yourse
 | Archive | For whom | Needs |
 |---|---|---|
 | `*-docker-installer.zip` | Windows, Linux, macOS | [Docker](https://docs.docker.com/get-docker/) |
-| `*-native-win-x64.zip` | Windows | nothing (the installer downloads yt-dlp, deno and ffmpeg) |
+| `*-native-win-x64.zip` | Windows | nothing (ffmpeg is bundled, the installer downloads yt-dlp and deno) |
 | `*-native-linux-x64.tar.gz` | Linux | `libicu` and `libopus0` (the installer checks and tells you) |
 
 Unpack, run the installer (`install.cmd` / `install.ps1` / `install.sh`), answer the questions. Each archive has its own short README.
@@ -86,7 +87,7 @@ restricted by its terms of service in your country; use the bot responsibly and 
 
 Everything here is licensed under the [Open Software License 3.0](LICENSE), because it is built on, and derived from, the upstream
 TS3AudioBot code (Splamy/TS3AudioBot, goD0S fork), which uses that license. See [NOTICE.md](NOTICE.md) for third-party components
-(yt-dlp, deno, ffmpeg are downloaded at install or build time and keep their own licenses).
+(yt-dlp and deno are downloaded at install time; ffmpeg is installed with Docker or bundled unchanged into the Docker-free archives, with its own license in `licenses/ffmpeg/`).
 
 ---
 
@@ -106,6 +107,8 @@ TS3AudioBot code (Splamy/TS3AudioBot, goD0S fork), which uses that license. See 
 - **Веб-панель** (Vue 3): плеер, очередь, плейлисты, дерево каналов (бота можно перетащить в другой канал), экземпляры, данные сервера,
   консоль и список всех команд с описаниями. Удобна с телефона.
 - Интерфейс **на английском и русском** (новый язык - один JSON-файл), темы **тёмная / светлая / хакерская**, горячие клавиши.
+  Ответы бота в чате TeamSpeak - на языке, выбранном в установщике.
+- Кнопка **«Удалить бота»** (Настройки): полностью удаляет установку без Docker (автозапуск, настройки, файлы).
 - Команды в чате TeamSpeak начинаются с `/` (например `/play <ссылка>`, `/help`).
 - Интерактивные установщики (английский / русский): спрашивают адрес сервера, ник, доступ к панели и ключ.
 - yt-dlp обновляется при каждом запуске (YouTube часто меняет защиту).
@@ -117,7 +120,7 @@ TS3AudioBot code (Splamy/TS3AudioBot, goD0S fork), which uses that license. See 
 | Архив | Для кого | Что нужно |
 |---|---|---|
 | `*-docker-installer.zip` | Windows, Linux, macOS | [Docker](https://docs.docker.com/get-docker/) |
-| `*-native-win-x64.zip` | Windows | ничего (установщик скачает yt-dlp, deno и ffmpeg) |
+| `*-native-win-x64.zip` | Windows | ничего (ffmpeg встроен, установщик скачает yt-dlp и deno) |
 | `*-native-linux-x64.tar.gz` | Linux | `libicu` и `libopus0` (установщик проверит и подскажет) |
 
 Распакуйте, запустите установщик (`install.cmd` / `install.ps1` / `install.sh`), ответьте на вопросы. В каждом архиве есть свой короткий README.

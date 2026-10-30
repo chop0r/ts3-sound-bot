@@ -197,6 +197,7 @@ msg en libsMissing  'Missing system libraries: {0}. Install them and run the ins
 msg en toolMissing  'Missing command: {0}. Install it (for example: sudo apt install {0}) and run the installer again.'
 msg en dlHead       'Downloading tools (yt-dlp, deno, ffmpeg)...'
 msg en dlOne        '  downloading {0} ...'
+msg en dlHave       '  {0}: already downloaded'
 msg en dlFail       'Could not download {0}. Check your internet connection and run the installer again (choose "Update tools").'
 msg en starting     'Starting the bot...'
 msg en mLogs        'logs:            data/logs/ (open the newest file)'
@@ -216,6 +217,7 @@ msg ru libsMissing  'Не хватает системных библиотек: 
 msg ru toolMissing  'Нет команды: {0}. Установите её (например: sudo apt install {0}) и снова запустите установщик.'
 msg ru dlHead       'Скачиваю инструменты (yt-dlp, deno, ffmpeg)...'
 msg ru dlOne        '  скачиваю {0} ...'
+msg ru dlHave       '  {0}: уже скачан'
 msg ru dlFail       'Не удалось скачать {0}. Проверьте интернет и запустите установщик снова (выберите "Обновить инструменты").'
 msg ru starting     'Запускаю бота...'
 msg ru mLogs        'логи:            data/logs/ (откройте самый новый файл)'
@@ -232,17 +234,25 @@ ask_yes_no_default_no() {
 }
 download() { # url dest what
   say "$(t dlOne "$3")"
-  if command -v curl >/dev/null 2>&1; then curl -fsSL --retry 3 -o "$2" "$1"; else wget -q -O "$2" "$1"; fi || { red "$(t dlFail "$3")"; exit 1; }
+  if command -v curl >/dev/null 2>&1; then curl -fL --retry 3 --connect-timeout 20 --speed-limit 1000 --speed-time 60 -# -o "$2" "$1"; else wget -q --show-progress -O "$2" "$1"; fi || { red "$(t dlFail "$3")"; exit 1; }
 }
 install_tools() {
   local tmp; tmp="$(mktemp -d)"
   mkdir -p bin
   cyan "$(t dlHead)"
-  download https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux bin/yt-dlp yt-dlp
-  chmod +x bin/yt-dlp
-  download https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip "$tmp/deno.zip" deno
-  unzip -qo "$tmp/deno.zip" -d bin && chmod +x bin/deno
-  if [ ! -x bin/ffmpeg ]; then
+  chmod +x bin/ffmpeg 2>/dev/null   # bundled in the release archive
+  say "[1/3]"
+  if [ "$MODE" = update ] || [ ! -x bin/yt-dlp ]; then
+    download https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux bin/yt-dlp yt-dlp
+    chmod +x bin/yt-dlp
+  else say "$(t dlHave yt-dlp)"; fi
+  say "[2/3]"
+  if [ "$MODE" = update ] || [ ! -x bin/deno ]; then
+    download https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip "$tmp/deno.zip" deno
+    unzip -qo "$tmp/deno.zip" -d bin && chmod +x bin/deno
+  else say "$(t dlHave deno)"; fi
+  say "[3/3]"
+  if [ -x bin/ffmpeg ]; then say "$(t dlHave ffmpeg)"; else
     download https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz "$tmp/ffmpeg.tar.xz" ffmpeg
     tar -xJf "$tmp/ffmpeg.tar.xz" -C "$tmp" --wildcards '*/ffmpeg' && cp "$tmp"/*/ffmpeg bin/ffmpeg && chmod +x bin/ffmpeg || { red "$(t dlFail ffmpeg)"; exit 1; }
   fi
@@ -284,6 +294,9 @@ if [ -f data/ts3audiobot.toml ]; then
     case "$REPLY_VAL" in 3) exit 0;; 2) MODE=reconfigure;; *) MODE=update;; esac
   fi
 fi
+
+# tools first: everything is downloaded before the first question
+[ "$NODOWNLOAD" = 1 ] || install_tools
 
 GENERATED=0; AUTO=""
 if [ "$MODE" != update ]; then
@@ -408,14 +421,13 @@ EOF
   } > "$BOTFILE"
   printf '# TS3AudioBot secrets - do not share this file\napi_key = %s\n' "$KEY" > data/websecrets.ini
   chmod 600 data/websecrets.ini 2>/dev/null || true
-  printf 'YTDLP_PROXY=%s\nPORT=%s\nACCESS=%s\n' "$PROXY" "$PORT" "$ACCESS" > settings.env
+  printf 'YTDLP_PROXY=%s\nPORT=%s\nACCESS=%s\nBOT_LANG=%s\n' "$PROXY" "$PORT" "$ACCESS" "$LANG_CODE" > settings.env
 else
   PORT="$(sed -n 's/^PORT=//p' settings.env 2>/dev/null | head -1)"; [ -z "$PORT" ] && PORT=58913
   ACCESS="$(sed -n 's/^ACCESS=//p' settings.env 2>/dev/null | head -1)"; [ -z "$ACCESS" ] && ACCESS=local
   KEY="$(sed -n 's/^api_key *= *//p' data/websecrets.ini 2>/dev/null | head -1)"
 fi
 
-[ "$NODOWNLOAD" = 1 ] || install_tools
 
 if [ -n "$AUTO" ]; then
   UNITDIR="$HOME/.config/systemd/user"
