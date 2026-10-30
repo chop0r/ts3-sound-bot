@@ -64,6 +64,14 @@ The panel has one shared access key. By default the installers make it reachable
 only on networks you trust, and put a reverse proxy with a real certificate in front of it before exposing it to the internet.
 Never publish your `data/` folder (it holds the key, the bot identity and your server password).
 
+## Acknowledgements
+
+Huge thanks to **Splamy** and all contributors of [TS3AudioBot](https://github.com/Splamy/TS3AudioBot) - the original bot (and the TSLib
+TeamSpeak library inside it) that this project is built on - and to **goD0S** for keeping it alive in the
+[maintained fork](https://github.com/goD0S/TS3AudioBot). Without their work this project would not exist.
+Thanks also to the authors of [yt-dlp](https://github.com/yt-dlp/yt-dlp), [deno](https://deno.com), [ffmpeg](https://ffmpeg.org),
+[Vue](https://vuejs.org) and [Vite](https://vite.dev).
+
 ## Made with AI
 
 This project was created with the help of an AI assistant (Claude by Anthropic) under the author's direction: the code, the installers
@@ -143,6 +151,14 @@ pwsh scripts/package.ps1 -Version 1.0.0     # результат в dist/
 У панели один общий ключ доступа. По умолчанию установщики открывают её только на этом же компьютере; режим «локальная сеть» выбирайте
 только в доверенных сетях, а перед выходом в интернет поставьте перед панелью обратный прокси с настоящим сертификатом.
 Никогда не публикуйте папку `data/` (в ней ключ, личность бота и пароль вашего сервера).
+
+## Благодарности
+
+Огромное спасибо **Splamy** и всем участникам [TS3AudioBot](https://github.com/Splamy/TS3AudioBot) - оригинального бота (и библиотеки TSLib
+для TeamSpeak внутри него), на котором построен этот проект, и **goD0S** за то, что поддерживает его
+в [живом форке](https://github.com/goD0S/TS3AudioBot). Без их работы этого проекта не было бы.
+Спасибо и авторам [yt-dlp](https://github.com/yt-dlp/yt-dlp), [deno](https://deno.com), [ffmpeg](https://ffmpeg.org),
+[Vue](https://vuejs.org) и [Vite](https://vite.dev).
 
 ## Создано с помощью нейросети
 
