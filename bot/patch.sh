@@ -151,4 +151,7 @@ EOF3
 ln=$(grep -nF "$line" TS3AudioBot/Core.cs | cut -d: -f1)
 sed -i "$((ln - 1))r /tmp/stopwatch.cs" TS3AudioBot/Core.cs
 grep -q 'stop.request' TS3AudioBot/Core.cs
+# 8. Search results can contain channels/playlists (ids longer than 11 chars, e.g. "UC..." for a channel): keep videos only, otherwise /yt fails on the first channel
+sed -i "/SearchYoutubeDlAsync(string keyword)/,/ToArray/ s/entry => entry.id != null/entry => entry.id != null \&\& entry.id.Length == 11/" TS3AudioBot/ResourceFactories/Youtube/YoutubeResolver.cs
+grep -q "entry.id.Length == 11" TS3AudioBot/ResourceFactories/Youtube/YoutubeResolver.cs
 echo "patch ok"
