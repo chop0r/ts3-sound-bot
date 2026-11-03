@@ -15,7 +15,7 @@ index 416fc12..95d2a12 100644
  			new Route("POST", "/bot/{id}/netease/import", (c, p) => NeteaseImport(c)),
  			new Route("POST", "/bot/{id}/netease/migrate", (c, p) => NeteaseMigrate(c)),
  			new Route("GET", "/bot/{id}/netease/search", (c, p) => NeteaseSearch(c)),
-@@ -576,6 +582,178 @@ private static async Task DeletePlaylist(HttpContext ctx)
+@@ -576,6 +582,203 @@ private static async Task DeletePlaylist(HttpContext ctx)
  			await WriteJson(ctx, new { ok = true }).ConfigureAwait(false);
  		}
  
@@ -59,8 +59,33 @@ index 416fc12..95d2a12 100644
 +				await WriteError(ctx, "Playlist title is required").ConfigureAwait(false);
 +				return;
 +			}
-+			var id = string.IsNullOrWhiteSpace(body.Id) ? "list-" + Guid.NewGuid().ToString("N").Substring(0, 8) : body.Id!.Trim();
-+			var result = PlaylistManagerOf(bot).CreatePlaylist(id, title);
++			var manager = PlaylistManagerOf(bot);
++			var candidates = new List<string>();
++			if (!string.IsNullOrWhiteSpace(body.Id))
++				candidates.Add(body.Id!.Trim());
++			else
++			{
++				// the id is also the name used by the /playlist chat command, so derive it from the title
++				var slug = System.Text.RegularExpressions.Regex.Replace(title, @"[^\p{L}\p{N}_-]+", "_").Trim('_');
++				if (slug.Length > 40)
++					slug = slug.Substring(0, 40);
++				if (slug.Length > 0)
++				{
++					candidates.Add(slug);
++					for (var n = 2; n <= 9; n++)
++						candidates.Add(slug + "-" + n);
++				}
++				candidates.Add("list-" + Guid.NewGuid().ToString("N").Substring(0, 8));
++			}
++			var id = candidates[0];
++			var result = manager.CreatePlaylist(id, title);
++			foreach (var next in candidates.Skip(1))
++			{
++				if (result.Ok)
++					break;
++				id = next;
++				result = manager.CreatePlaylist(id, title);
++			}
 +			if (!result.Ok)
 +			{
 +				await WriteError(ctx, result.Error.Str).ConfigureAwait(false);
