@@ -1,5 +1,6 @@
 # Permissions: everyone has the same rights - all music, playlists, search, volume, restart.
-# Only dangerous things are closed: C# code execution, connecting the bot to other servers, plugins, settings and rights.
+# Only dangerous things are closed: C# code execution, connecting the bot to other servers, plugins, settings, rights and uninstalling
+# (the web panel's "Delete the bot" button still works: it runs the command with its own rights).
 [[rule]]
 	"+" = "*"
 	"-" = [
@@ -9,4 +10,5 @@
 		"cmd.settings.*",
 		"cmd.rights.*",
 		"cmd.system.*",
+		"cmd.uninstall",
 	]

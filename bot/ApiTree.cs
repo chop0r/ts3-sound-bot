@@ -81,6 +81,9 @@ namespace TS3AudioBot.Web.Api
 
 		private sealed class CmdBody { public string? Line { get; set; } }
 
+		// one session for the whole panel: "/search from youtube x" and a later "/search play 0" see the same results
+		private static readonly UserSession PanelSession = new AnonymousSession();
+
 		private static async Task CommandRun(HttpContext ctx)
 		{
 			var bot = GetBotOrFirst(ParseId(ctx));
@@ -95,8 +98,11 @@ namespace TS3AudioBot.Web.Api
 			line = CommandParser.DefaultCommandChar + line; // without the command prefix (here "/") the parser treats the string as plain text
 			var info = new ExecutionInformation(bot.Injector);
 			info.AddModule(new CallerInfo(true) { SkipRightsChecks = true, CommandComplexityMax = 100, IsColor = false });
-			info.AddModule<InvokerData>(InvokerData.Anonymous);
-			info.AddModule(new AnonymousSession());
+			// /yt, /search play and the like need a UserSession (search results) and a ClientCall (who plays); register them under the types the commands ask for
+			var call = new ClientCall(TSLib.Uid.Anonymous, line, nickName: "Web panel");
+			info.AddModule(call);
+			info.AddModule<InvokerData>(call);
+			info.AddModule<UserSession>(PanelSession);
 			info.AddModule(Filter.DefaultFilter);
 			try
 			{

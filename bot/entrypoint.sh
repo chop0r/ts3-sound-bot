@@ -2,7 +2,8 @@
 # Before the bot starts: update yt-dlp (YouTube changes often) and build its config.
 #   YTDLP_PROXY        - proxy for YouTube, e.g. socks5://host.docker.internal:1080. Empty = direct.
 #   /app/data/cookies.txt - YouTube cookies (Netscape format), if YouTube asks to "confirm you are not a bot".
-timeout 60 yt-dlp -U >/dev/null 2>&1 || echo "yt-dlp: update failed, using the current version"
+# before the bot starts, so the update never competes with its first requests (120 s: the binary is ~40 MB, on a slow link 60 s was not enough)
+timeout 120 yt-dlp -U >/dev/null 2>&1 || echo "yt-dlp: update failed, using the current version"
 CONF=/etc/yt-dlp.conf
 {
   echo "--js-runtimes deno"
@@ -11,4 +12,9 @@ CONF=/etc/yt-dlp.conf
   [ -f /app/data/cookies.txt ] && echo "--cookies /app/data/cookies.txt"
 } > "$CONF"
 echo "yt-dlp $(yt-dlp --version), settings:"; sed 's/^/  /' "$CONF"
-exec /app/TS3AudioBot "$@"
+# docker stop sends SIGTERM: turn it into the bot's own graceful stop (stop.request), otherwise the server keeps a ghost client for about a minute
+/app/TS3AudioBot "$@" &
+pid=$!
+trap 'touch /app/data/stop.request' TERM INT
+while kill -0 "$pid" 2>/dev/null; do wait "$pid"; done
+wait "$pid"
